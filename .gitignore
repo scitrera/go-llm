@@ -1,0 +1,7 @@
+.agents/
+.codex/
+.omc/
+.omo/
+.slop/
+*.swp
+RELEASING.md

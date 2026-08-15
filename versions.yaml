@@ -1,0 +1,54 @@
+# Authoritative version for go-llm.
+# Run: sync-versions             to apply
+# Run: sync-versions --check     to verify (CI-friendly)
+
+# One module, one number, one tag. The protocol and client packages ship
+# together — the client consumes the protocol types directly, so a protocol
+# change is a client change — and sharing a module makes that lockstep
+# structural instead of a pair of version pins somebody has to move together.
+#
+# A Go module has no version manifest: its version *is* the `vX.Y.Z` git tag. So
+# this file and the tag are the only two places the number lives, and
+# publish-go.yml refuses to release when they disagree.
+go-llm: 0.2.0
+
+project_rules:
+  go-llm:
+    # Declares the module for CI (test-go, publish-go) and rewrites nothing.
+    - { type: gomod,      path: go.mod }
+    # `const Version = "..."` in the root package, which exists to hold it. The
+    # client's default User-Agent is built from it, so a release that forgot to
+    # sync would announce the wrong version on every request.
+    - { type: go_version, path: version.go }
+
+# A minimum, not a pin: `1.25.0` admits every 1.25.x and later toolchain.
+# Three-part on purpose — Go 1.21+ canonicalises the directive, and a two-part
+# `go 1.25` makes `go build` refuse with "updates to go.mod needed" outside a
+# workspace, which is exactly what CI is.
+go_toolchain:
+  go: "1.25.0"
+
+ci:
+  test_branches: [ main ]
+  # Pinned deliberately: a bare `scitrera-repo-tools` floats to the newest
+  # release, which is the same unpinned-tooling drift version-check exists to
+  # catch. 0.1.28 is the floor for this file — `ci.go.verify_tag_version` is new
+  # in it, and an older repo-tools rejects the key outright rather than ignoring
+  # it.
+  repo_tools_source: "scitrera-repo-tools==0.1.28"
+  # Drives publish-go.yml, which for a library is one job: gate on the Go tests,
+  # then cut the release for the tag. Nothing is attached to it — there is no
+  # artifact, since `go get` resolves the version from the proxy by tag — so the
+  # release exists for its notes.
+  github_release: true
+  go:
+    # Distinct from go_toolchain.go above, which is the module's *minimum*.
+    # setup-go treats a three-part value as exact, so '1.25.0' would pin CI to
+    # that one patch release; '1.25' resolves to the newest 1.25.x.
+    go_version: "1.25"
+    test_args: "-race -count=1"
+    # Refuse to release when the pushed tag disagrees with this file. A Go
+    # module's version *is* its tag, so a wrong one is not a mislabelled
+    # artifact that can be re-uploaded — it is the published version, and the
+    # proxy is built to keep it that way.
+    verify_tag_version: go-llm
