@@ -85,7 +85,7 @@ func (c *Client) Stream(ctx context.Context, backend Backend, request llmprotoco
 	metadata.StatusCode = response.StatusCode
 	metadata.ResponseHeaders = response.Header.Clone()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		defer response.Body.Close()
+		defer func() { _ = response.Body.Close() }()
 		cancel()
 		responseBody, readErr := readBounded(response.Body, c.maxResponseBytes)
 		if readErr != nil {
@@ -159,7 +159,7 @@ func (s *Stream) Close() error {
 
 func (c *Client) runStream(ctx context.Context, cancel context.CancelFunc, response *http.Response, formatCodec codec.Codec, output chan<- streamItem, stream *Stream) {
 	defer close(output)
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	defer cancel()
 	defer func() {
 		stream.done.Store(true)

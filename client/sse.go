@@ -56,19 +56,3 @@ func (r *sseReader) Next() (llmprotocol.WireEvent, error) {
 	}
 	return llmprotocol.WireEvent{}, io.EOF
 }
-
-func writeSSEEvent(event llmprotocol.WireEvent) []byte {
-	var output strings.Builder
-	if event.Event != "" {
-		output.WriteString("event: ")
-		output.WriteString(event.Event)
-		output.WriteByte('\n')
-	}
-	for _, line := range strings.Split(string(event.Data), "\n") {
-		output.WriteString("data: ")
-		output.WriteString(line)
-		output.WriteByte('\n')
-	}
-	output.WriteByte('\n')
-	return []byte(output.String())
-}

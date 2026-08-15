@@ -21,12 +21,21 @@ project_rules:
     # sync would announce the wrong version on every request.
     - { type: go_version, path: version.go }
 
-# A minimum, not a pin: `1.25.0` admits every 1.25.x and later toolchain.
+# A minimum, not a pin: it admits this toolchain and every later one.
+#
+# Raised from 1.25.0 to 1.25.13 for the stdlib fixes govulncheck reports as
+# reachable from this module: GO-2026-5026 (net/http -> x/net/idna Punycode),
+# GO-2026-5972 (encoding/asn1 recursion depth), GO-2026-6090 (crypto/tls
+# post-handshake message limit) and GO-2026-6218 (quadratic net/url.resolvePath).
+# All four are fixed in 1.25.13. Nothing here needs a language feature newer
+# than 1.25 — this is a security floor, which is the one thing the `go`
+# directive can express to consumers.
+#
 # Three-part on purpose — Go 1.21+ canonicalises the directive, and a two-part
 # `go 1.25` makes `go build` refuse with "updates to go.mod needed" outside a
 # workspace, which is exactly what CI is.
 go_toolchain:
-  go: "1.25.0"
+  go: "1.25.13"
 
 ci:
   test_branches: [ main ]
@@ -42,10 +51,15 @@ ci:
   # release exists for its notes.
   github_release: true
   go:
-    # Distinct from go_toolchain.go above, which is the module's *minimum*.
-    # setup-go treats a three-part value as exact, so '1.25.0' would pin CI to
-    # that one patch release; '1.25' resolves to the newest 1.25.x.
-    go_version: "1.25"
+    # Exact, and it has to be: `1.25` looks like it tracks the newest patch, but
+    # setup-go runs with check-latest false, so it prefers whatever 1.25.x the
+    # runner already has cached. That is how the first run landed on 1.25.12 and
+    # failed govulncheck on four advisories fixed in 1.25.13. Naming the version
+    # makes the runner fetch it rather than settle for its cache. Raise this in
+    # lockstep with go_toolchain.go above; the govulncheck job runs
+    # GOTOOLCHAIN=local, so a CI toolchain below the module's minimum cannot
+    # build at all.
+    go_version: "1.25.13"
     test_args: "-race -count=1"
     # Refuse to release when the pushed tag disagrees with this file. A Go
     # module's version *is* its tag, so a wrong one is not a mislabelled

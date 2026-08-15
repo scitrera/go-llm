@@ -584,13 +584,13 @@ func decodeResponsesContent(raw json.RawMessage, policy llmprotocol.Policy, path
 			}
 			continue
 		}
-		if block != nil {
-			block.Extensions, diagnostics, err = collectAndAppendExtensions(format, object, policy, diagnostics)
-			if err != nil {
-				return nil, diagnostics, err
-			}
-			blocks = append(blocks, *block)
+		// No nil check: every case above assigns a block and the default one
+		// continues, so reaching here means block is set.
+		block.Extensions, diagnostics, err = collectAndAppendExtensions(format, object, policy, diagnostics)
+		if err != nil {
+			return nil, diagnostics, err
 		}
+		blocks = append(blocks, *block)
 	}
 	_ = role
 	return blocks, diagnostics, nil

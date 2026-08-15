@@ -351,8 +351,6 @@ func responseStreamEnvelope(state *StreamState, status string, usage *llmprotoco
 	return object
 }
 
-func responseItemKey(output int) string { return fmt.Sprintf("response-item:%d", output) }
-
 func responseStreamItemID(state *StreamState, prefix string, output, content int) string {
 	key := fmt.Sprintf("response-item:%s:%d:%d", prefix, output, content)
 	if value, ok := state.valueMap()[key].(string); ok && value != "" {

@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	llmprotocol "github.com/scitrera/go-llm/protocol"
 )
@@ -506,13 +505,13 @@ func decodeAnthropicContent(raw json.RawMessage, policy llmprotocol.Policy, path
 			}
 			continue
 		}
-		if block != nil {
-			block.Extensions, diagnostics, err = collectAndAppendExtensions(format, object, policy, diagnostics)
-			if err != nil {
-				return nil, diagnostics, err
-			}
-			blocks = append(blocks, *block)
+		// No nil check: every case above assigns a block and the default one
+		// continues, so reaching here means block is set.
+		block.Extensions, diagnostics, err = collectAndAppendExtensions(format, object, policy, diagnostics)
+		if err != nil {
+			return nil, diagnostics, err
 		}
+		blocks = append(blocks, *block)
 	}
 	return blocks, diagnostics, nil
 }
@@ -893,14 +892,4 @@ func anthropicSingleText(parts []any) (string, bool) {
 	}
 	text, ok := value["text"].(string)
 	return text, ok
-}
-
-func flattenText(blocks []llmprotocol.ContentBlock) string {
-	var text strings.Builder
-	for _, block := range blocks {
-		if block.Type == llmprotocol.ContentText {
-			text.WriteString(block.Text)
-		}
-	}
-	return text.String()
 }
